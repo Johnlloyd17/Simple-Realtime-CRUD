@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registration Dashboard</title>
+    <link rel="stylesheet" href="dashboard-style.css">
+    <style>
+        /* Add some basic styling for the buttons */
+        .action-button {
+            background-color: #4CAF50;
+            /* Green */
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 2px 2px;
+            cursor: pointer;
+        }
+
+        .edit-button {
+            background-color: #008CBA;
+            /* Blue */
+        }
+
+        .delete-button {
+            background-color: #f44336;
+            /* Red */
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">Registration Dashboard</h1>
+    <table id="registrationsTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <div id="errorDiv" style="color: red;"></div>
+
+    <script>
+        function fetchDataAndUpdateTable() {
+            fetch('/api/registrations')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const tableBody = document.querySelector('#registrationsTable tbody');
+                    tableBody.innerHTML = ''; // Clear existing table data
+
+                    data.forEach(registration => {
+                        const row = document.createElement('tr');
+                        // Add the _id field to the row as a data attribute
+                        row.dataset.id = registration._id;
+
+                        row.innerHTML = `
+                            <td>${registration.name}</td>
+                            <td>${registration.email}</td>
+                            <td>${registration.phone}</td>
+                            <td>
+                                <button class="action-button edit-button" onclick="editRegistration('${registration._id}')">Edit</button>
+                                <button class="action-button delete-button" onclick="deleteRegistration('${registration._id}')">Delete</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                    document.getElementById('errorDiv').textContent = ''; //Clear error message.
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    document.getElementById('errorDiv').textContent = 'Failed to load registrations. Please try again later.';
+                });
+        }
+
+        function editRegistration(id) {
+          // Redirect to the edit page with the registration ID
+            window.location.href = `edit.html?id=${id}`;
+        }
+
+        function deleteRegistration(id) {
+            // Add a confirmation dialog
+            if (confirm('Are you sure you want to delete this registration?')) {
+                console.log("Delete registration with ID:", id);
+                // Add logic to send the ID to the server
+                fetch(`/api/registrations/${id}`, {  // Use a DELETE request
+                    method: 'DELETE',
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Refresh the table
+                        fetchDataAndUpdateTable()
+                        alert("Delete successful!");
+                    })
+                    .catch(error => {
+                        console.error('Error deleting registration:', error);
+                        alert('Error deleting registration. See console for details.');
+                    });
+
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchDataAndUpdateTable(); // Initial fetch
+
+            // Set up periodic refresh (e.g., every 5 seconds)
+            setInterval(fetchDataAndUpdateTable, 5000); // 5000 milliseconds = 5 seconds
+        });
+    </script>
+</body>
+</html>
